@@ -20,17 +20,17 @@ asmlinkage long (*origin_open)(const char __user *filename, int flags, umode_t m
 asmlinkage long (*origin_write)(unsigned int fd, const char __user *buf, size_t count);
 
 asmlinkage long my_open(const char __user *filename, int flags, umode_t mode) {
-    char name[64];
-    name[0] = 0;
-    ksys_pidtoname(task_pid_nr(current), name, 64);
-    printk(KERN_INFO "%s open %s", name, filename);
+    // char name[64];
+    // name[0] = 0;
+    // ksys_pidtoname(task_pid_nr(current), name, 64);
+    // printk(KERN_INFO "%s open %s", name, filename);
     return origin_open(filename, flags, mode);
 }
 asmlinkage long my_write(unsigned int fd, const char __user *buf, size_t count) {
-    char name[64];
-    name[0] = 0;
-    ksys_pidtoname(task_pid_nr(current), name, 64);
-    printk(KERN_INFO "%s write %u, %ld bytes", name, fd, (long int)count);
+    // char name[64];
+    // name[0] = 0;
+    // ksys_pidtoname(task_pid_nr(current), name, 64);
+    // printk(KERN_INFO "%s write %u, %ld bytes", name, fd, (long int)count);
     return origin_write(fd, buf, count);
 }
 
