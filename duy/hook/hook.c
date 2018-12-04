@@ -10,6 +10,7 @@
 #include <linux/moduleparam.h>
 #include <linux/kallsyms.h>
 #include <asm/cacheflush.h>
+#include <linux/slab.h>
 
 MODULE_LICENSE("GPL");
 
@@ -19,11 +20,17 @@ asmlinkage long (*origin_open)(const char __user *filename, int flags, umode_t m
 asmlinkage long (*origin_write)(unsigned int fd, const char __user *buf, size_t count);
 
 asmlinkage long my_open(const char __user *filename, int flags, umode_t mode) {
-    printk(KERN_INFO "Hook open");
+    char name[64];
+    name[0] = 0;
+    ksys_pidtoname(task_pid_nr(current), name, 64);
+    printk(KERN_INFO "%s open %s", name, filename);
     return origin_open(filename, flags, mode);
 }
 asmlinkage long my_write(unsigned int fd, const char __user *buf, size_t count) {
-    printk(KERN_INFO "Hook write");
+    char name[64];
+    name[0] = 0;
+    ksys_pidtoname(task_pid_nr(current), name, 64);
+    printk(KERN_INFO "%s write %u, %ld bytes", name, fd, (long int)count);
     return origin_write(fd, buf, count);
 }
 
@@ -54,10 +61,10 @@ static int __init entry_point(void) {
     return 0;
 }
 static void __exit exit_point(void) {
-    make_rw((unsigned long)system_call_table_addr);
+    make_rw((unsigned long) system_call_table_addr);
     system_call_table_addr[__NR_open] = origin_open;
     system_call_table_addr[__NR_write] = origin_write;
-    make_ro((unsigned long)system_call_table_addr);
+    make_ro((unsigned long) system_call_table_addr);
 }
 module_init(entry_point);
 module_exit(exit_point);
