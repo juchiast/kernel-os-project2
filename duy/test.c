@@ -1,3 +1,4 @@
+#include <sys/types.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <stdio.h>
@@ -14,9 +15,12 @@
 #endif
 
 int main() {
-    printf("call pnametoid: %d\n", pnametoid);
-    printf("%d\n", syscall(pnametoid, (char *)0));
-    printf("call pidtoname: %d\n", pidtoname);
-    printf("%d\n", syscall(pidtoname, (int)0, (char *)0, (int)0));
+    printf("call pnametoid (%d)\n", pnametoid);
+    printf("pnametoid return %d\n", (int)syscall(pnametoid, (char *)"systemd"));
+    printf("call pidtoname (%d)\n", pidtoname);
+    char buf[256];
+    buf[0] = '\0';
+    printf("pidtoname return %d\n", (int)syscall(pidtoname, (int)getpid(), (char *)buf, (int)256));
+    printf("process name: %s\n", buf);
     return 0;
 }
