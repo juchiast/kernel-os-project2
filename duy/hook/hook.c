@@ -15,6 +15,7 @@
 MODULE_LICENSE("GPL");
 
 static void **system_call_table_addr;
+static int calls = 0;
 
 asmlinkage long (*origin_open)(const char __user *filename, int flags, umode_t mode);
 asmlinkage long (*origin_write)(unsigned int fd, const char __user *buf, size_t count);
@@ -24,6 +25,7 @@ asmlinkage long my_open(const char __user *filename, int flags, umode_t mode) {
     // name[0] = 0;
     // ksys_pidtoname(task_pid_nr(current), name, 64);
     // printk(KERN_INFO "%s open %s", name, filename);
+    calls++;
     return origin_open(filename, flags, mode);
 }
 asmlinkage long my_write(unsigned int fd, const char __user *buf, size_t count) {
@@ -31,6 +33,7 @@ asmlinkage long my_write(unsigned int fd, const char __user *buf, size_t count) 
     // name[0] = 0;
     // ksys_pidtoname(task_pid_nr(current), name, 64);
     // printk(KERN_INFO "%s write %u, %ld bytes", name, fd, (long int)count);
+    calls++;
     return origin_write(fd, buf, count);
 }
 
@@ -61,6 +64,7 @@ static int __init entry_point(void) {
     return 0;
 }
 static void __exit exit_point(void) {
+    printk(KERN_INFO "count: %d", calls);
     make_rw((unsigned long) system_call_table_addr);
     system_call_table_addr[__NR_open] = origin_open;
     system_call_table_addr[__NR_write] = origin_write;
