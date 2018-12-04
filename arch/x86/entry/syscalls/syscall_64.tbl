@@ -343,6 +343,8 @@
 332	common	statx			__x64_sys_statx
 333	common	io_pgetevents		__x64_sys_io_pgetevents
 334	common	rseq			__x64_sys_rseq
+335     common  pnametoid               __x64_sys_pnametoid
+336     common  pidtoname               __x64_sys_pidtoname
 
 #
 # x32-specific system call numbers start at 512 to avoid cache impact

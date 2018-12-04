@@ -435,3 +435,5 @@ COND_SYSCALL(setuid16);
 
 /* restartable sequence */
 COND_SYSCALL(rseq);
+COND_SYSCALL(pnametoid);
+COND_SYSCALL(pidtoname);

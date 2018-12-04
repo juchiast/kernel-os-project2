@@ -1294,3 +1294,8 @@ static inline unsigned int ksys_personality(unsigned int personality)
 }
 
 #endif
+
+asmlinkage long sys_pnametoid(const char __user *name);
+int ksys_pnametoid(const char __user *name);
+asmlinkage long sys_pidtoname(int pid, char __user *buf, int len);
+int ksys_pidtoname(int pid, char __user *buf, int len);
