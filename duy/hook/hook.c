@@ -11,6 +11,7 @@
 #include <linux/kallsyms.h>
 #include <asm/cacheflush.h>
 #include <linux/slab.h>
+#include <linux/fdtable.h>
 
 MODULE_LICENSE("GPL");
 
@@ -26,17 +27,51 @@ static char* pidtoname(int pid) {
     return task->comm;
 }
 
-asmlinkage long (*origin_open)(const char __user *filename, int flags, umode_t mode);
-asmlinkage long (*origin_write)(unsigned int fd, const char __user *buf, size_t count);
+static char *get_path(struct files_struct *files, unsigned int fd) {
+    char *pathname;
+    struct file *file;
+    struct path *path;
+    spin_lock(&files->file_lock);
+    file = fcheck_files(files, fd);
+    if (!file) {
+        spin_unlock(&files->file_lock);
+        return NULL;
+    }
+    path = &file->f_path;
+    path_get(path);
+    spin_unlock(&files->file_lock);
+    pathname = kmalloc(1024, GFP_KERNEL);
+    if (!pathname) {
+        path_put(path);
+        return NULL;
+    }
+    if (IS_ERR(d_path(path, pathname, PAGE_SIZE))) {
+        path_put(path);
+        kfree(pathname);
+        return NULL;
+    }
+    path_put(path);
+    return pathname;
+}
 
-asmlinkage long my_open(const char __user *filename, int flags, umode_t mode) {
-    long ret = origin_open(filename, flags, mode);
-    printk(KERN_INFO "%s open", pidtoname(task_pid_nr(current)));
+static long (*origin_open)(struct pt_regs *regs);
+static long (*origin_write)(struct pt_regs *regs);
+
+static long my_open(struct pt_regs *regs) {
+    long ret = origin_open(regs);
+    char *name = pidtoname(task_pid_nr(current));
+    if (strcmp(name, "dmesg") != 0) {
+        printk(KERN_INFO "process %s open", name);
+    }
     return ret;
 }
-asmlinkage long my_write(unsigned int fd, const char __user *buf, size_t count) {
-    long ret = origin_write(fd, buf, count);
-    printk(KERN_INFO "%s write", pidtoname(task_pid_nr(current)));
+static long my_write(struct pt_regs *regs) {
+    long ret = origin_write(regs);
+    char *name = pidtoname(task_pid_nr(current));
+    if (strcmp(name, "dmesg") != 0) {
+        printk(KERN_INFO "process %s write", name);
+    }
+
     return ret;
 }
 
