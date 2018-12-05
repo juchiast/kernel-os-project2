@@ -1,6 +1,6 @@
 obj-m+=hook.o
  
 all:
-	make -C "$(PWD)/../.." M="$(PWD)" modules
+	make -C /lib/modules/$(shell uname -r)/build M="$(PWD)" modules
 clean:
-	make -C "$(PWD)/../.." M="$(PWD)" clean
+	make -C /lib/modules/$(shell uname -r)/build M="$(PWD)" clean
