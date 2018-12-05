@@ -9,14 +9,15 @@
 
 int ksys_pnametoid(const char __user *_name) {
     char *name;
-    int len;
     struct task_struct *task;
     int ret;
 
-    len = strlen_user(_name);
-    name = kmalloc(len + 1, GFP_KERNEL);
+    name = kmalloc(256, GFP_KERNEL);
     if (name == NULL) return -1;
-    strncpy_from_user(name, _name, len + 1);
+    if (strncpy_from_user(name, _name, 256) < 0) {
+        kfree(name);
+        return -1;
+    }
 
     ret = -1;
     for_each_process(task) {
