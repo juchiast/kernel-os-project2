@@ -16,16 +16,28 @@ MODULE_LICENSE("GPL");
 
 static void **system_call_table_addr;
 
+static char* pidtoname(int pid) {
+    struct pid* p;
+    struct task_struct *task;
+    p = find_get_pid(pid);
+    if (p == NULL) return NULL;
+    task = get_pid_task(p, PIDTYPE_PID);
+    if (task == NULL) return NULL;
+    return task->comm;
+}
+
 asmlinkage long (*origin_open)(const char __user *filename, int flags, umode_t mode);
 asmlinkage long (*origin_write)(unsigned int fd, const char __user *buf, size_t count);
 
 asmlinkage long my_open(const char __user *filename, int flags, umode_t mode) {
     long ret = origin_open(filename, flags, mode);
-    printk(KERN_INFO "something openen");
+    printk(KERN_INFO "%s open", pidtoname(task_pid_nr(current)));
     return ret;
 }
 asmlinkage long my_write(unsigned int fd, const char __user *buf, size_t count) {
-    return origin_write(fd, buf, count);
+    long ret = origin_write(fd, buf, count);
+    printk(KERN_INFO "%s write", pidtoname(task_pid_nr(current)));
+    return ret;
 }
 
 static int make_rw(unsigned long address) {

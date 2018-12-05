@@ -5,38 +5,19 @@
 #include <linux/string.h>
 #include <linux/uaccess.h>
 #include <linux/slab.h>
-
-static int len(const char __user *s) {
-    const char __user *ss = s;
-    char c;
-    if (ss == NULL) return 0;
-    do {
-        get_user(c, ss++);
-    } while (c != '\0');
-    return (ss - s) - 1;
-}
-
-static char *from_user(const char __user *s) {
-    int l;
-    char *ret;
-    if (s == NULL) return NULL;
-    l = len(s);
-    ret = kmalloc(l + 1, GFP_KERNEL);
-    if (ret == NULL) return NULL;
-    if (copy_from_user(ret, s, l) != 0) {
-        kfree(ret);
-        return NULL;
-    }
-    ret[l] = '\0';
-    return ret;
-}
+#include <linux/pid.h>
 
 int ksys_pnametoid(const char __user *_name) {
+    char *name;
+    int len;
     struct task_struct *task;
     int ret;
-    const char *name;
-    name = from_user(_name);
+
+    len = strlen_user(_name);
+    name = kmalloc(len + 1, GFP_KERNEL);
     if (name == NULL) return -1;
+    strncpy_from_user(name, _name, len + 1);
+
     ret = -1;
     for_each_process(task) {
         if(strcmp(task->comm, name) == 0){
@@ -46,6 +27,7 @@ int ksys_pnametoid(const char __user *_name) {
     }
     kfree(name);
     return ret;
+
 }
 
 SYSCALL_DEFINE1(pnametoid, char __user *, name) {
@@ -62,13 +44,13 @@ static int to_user(const char *s, char __user *buf, int len) {
 }
 
 int ksys_pidtoname(int pid, char __user *buf, int len) {
+    struct pid* p;
     struct task_struct *task;
-    for_each_process(task) {
-        if (task_pid_nr(task) == pid) {
-            return to_user(task->comm, buf, len);
-        }
-    }
-    return -1;
+    p = find_get_pid(pid);
+    if (p == NULL) return -1;
+    task = get_pid_task(p, PIDTYPE_PID);
+    if (task == NULL) return -1;
+    return to_user(task->comm, buf, len);
 }
 
 SYSCALL_DEFINE3(pidtoname, int, pid, char __user *, buf, int, len) {
