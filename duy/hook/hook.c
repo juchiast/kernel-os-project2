@@ -61,10 +61,10 @@ static char *get_path(struct files_struct *files, unsigned int fd) {
     return tmp;
 }
 
-static long (*origin_open)(struct pt_regs *regs);
-static long (*origin_write)(struct pt_regs *regs);
+static asmlinkage long (*origin_open)(struct pt_regs *regs);
+static asmlinkage long (*origin_write)(struct pt_regs *regs);
 
-static long my_open(struct pt_regs *regs) {
+static asmlinkage long my_open(struct pt_regs *regs) {
     const char __user *fname = (const char __user *)regs->di;
     long ret = origin_open(regs);
     char *name = pidtoname(task_pid_nr(current));
@@ -75,7 +75,7 @@ static long my_open(struct pt_regs *regs) {
     }
     return ret;
 }
-static long my_write(struct pt_regs *regs) {
+static asmlinkage long my_write(struct pt_regs *regs) {
     unsigned int fd = (unsigned int)regs->di;
     size_t count = (size_t)regs->dx;
     long ret = origin_write(regs);
